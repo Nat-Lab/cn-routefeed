@@ -16,7 +16,7 @@ void help() {
     fprintf(stderr, "usage: routefeed [-l HOST] [-p PORT] [-t INTERVAL] -a ASN -i BGP_ID -n NEXTHOP\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "cn-routefeed is a BGP speaker that feeds all China IPv4 delegations to peer. \n");
-    fprintf(stderr, "Delegation information are fetch from APNIC.\n");
+    fprintf(stderr, "Delegation information is fetch from APNIC.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "required arguments:\n");
     fprintf(stderr, "  -a ASN       Local ASN of the BGP speaker.\n");
