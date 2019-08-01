@@ -103,7 +103,7 @@ bool Fetcher::getRoutesDiff(std::vector<libbgp::Prefix4> &added, std::vector<lib
         //std::set_difference(cur_allocs.begin(), cur_allocs.end(), last_allocs.begin(), last_allocs.end(), std::inserter(added, added.begin()));
         //std::set_difference(last_allocs.begin(), last_allocs.end(), cur_allocs.begin(), cur_allocs.end(), std::inserter(dropped, dropped.begin()));
 
-        fprintf(stderr, "[INFO] cFetcher::getRoutesDiff: omputing diffs...\n");
+        fprintf(stderr, "[INFO] Fetcher::getRoutesDiff: computing diffs...\n");
 
         std::vector<libbgp::Prefix4>::iterator it_new = cur_allocs.begin();
         std::vector<libbgp::Prefix4>::iterator it_old = last_allocs.begin();
