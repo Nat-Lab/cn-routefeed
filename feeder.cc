@@ -8,7 +8,7 @@
 
 namespace cnrf {
 
-Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval) : 
+Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port) : 
     rib(&logger), fetcher(&rib, &bus, nexthop) {
     logger.setLogLevel(libbgp::WARN);
     running = false;
@@ -21,6 +21,8 @@ Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t upda
     config_template.rib4 = &rib;
     config_template.router_id = bgp_id;
     this->update_interval = update_interval;
+    this->host = host;
+    this->port = port;
 }
 
 bool Feeder::start() {
@@ -29,8 +31,8 @@ bool Feeder::start() {
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(179);
+    server_addr.sin_addr.s_addr = host;
+    server_addr.sin_port = htons(port);
 
     fd_sock = socket(AF_INET, SOCK_STREAM, 0);
 
