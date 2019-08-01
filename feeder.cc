@@ -69,6 +69,7 @@ void Feeder::stop() {
     logger.log(libbgp::INFO, "Feeder::stop: shutting down...\n");
     int fd_sock_temp = fd_sock;
     fd_sock = -1;
+    shutdown(fd_sock_temp, SHUT_RDWR);
     close(fd_sock_temp);
     for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
 }
