@@ -3,6 +3,7 @@
 #include "fetcher.h"
 #include <stdint.h>
 #include <libbgp/bgp-fsm.h>
+#include <thread>
 #include <vector>
 #include <mutex>
 
@@ -17,9 +18,10 @@ public:
 
 private:
     void tick();
-    void handleAccept(int fd);
+    void handleAccept();
     void handleSession(const char *peer_addr, int fd);
 
+    int fd_sock;
     bool running;
 
     libbgp::BgpLogHandler logger;
@@ -27,8 +29,10 @@ private:
     libbgp::BgpRib4 rib;
     libbgp::RouteEventBus bus;
 
-    std::mutex fsm_list_mtx;
+    std::mutex list_mtx;
     std::vector<libbgp::BgpFsm*> fsms;
+    std::vector<std::thread> threads;
+    std::vector<int> client_fds;
 
     Fetcher fetcher;
 

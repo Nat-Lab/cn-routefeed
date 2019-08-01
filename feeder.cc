@@ -3,7 +3,6 @@
 #include <libbgp/fd-out-handler.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <thread>
 #include <utility>
 #include <chrono>
 
@@ -25,8 +24,8 @@ Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t upda
 }
 
 bool Feeder::start() {
-    int fd_sock = -1, fd_conn = -1;
-    struct sockaddr_in server_addr, client_addr;
+    fd_sock = -1;
+    struct sockaddr_in server_addr;
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -36,14 +35,14 @@ bool Feeder::start() {
     fd_sock = socket(AF_INET, SOCK_STREAM, 0);
 
     if (fd_sock < 0) {
-        logger.log(libbgp::FATAL, "socket(): %s\n", strerror(errno));
+        logger.log(libbgp::FATAL, "Feeder::start: socket(): %s\n", strerror(errno));
         return false;
     }
 
     int bind_ret = bind(fd_sock, (struct sockaddr *) &server_addr, sizeof(server_addr));
 
     if (bind_ret < 0) {
-        logger.log(libbgp::FATAL, "bind(): %s\n", strerror(errno));
+        logger.log(libbgp::FATAL, "Feeder::start: bind(): %s\n", strerror(errno));
         close(fd_sock);
         return false;
     }
@@ -51,46 +50,33 @@ bool Feeder::start() {
     int listen_ret = listen(fd_sock, 1);
 
     if (listen_ret < 0) {
-        logger.log(libbgp::FATAL, "listen(): %s\n", strerror(errno));
+        logger.log(libbgp::FATAL, "Feeder::start: listen(): %s\n", strerror(errno));
         close(fd_sock);
         return false;
     }
 
-    logger.log(libbgp::INFO, "waiting for any client...\n");
+    logger.log(libbgp::INFO, "Feeder::start: ready.\n");
 
-    socklen_t caddr_len = sizeof(client_addr);
-
-    char client_addr_str[INET_ADDRSTRLEN];
-
-    std::thread ticker_thread(&Feeder::tick, this);
-    ticker_thread.detach();
+    threads.push_back(std::thread (&Feeder::tick, this));
+    threads.push_back(std::thread (&Feeder::handleAccept, this));
 
     running = true;
-    
-    while (true) {
-        fd_conn = accept(fd_sock, (struct sockaddr *) &client_addr, &caddr_len);
-
-        if (fd_conn < 0) {
-            logger.log(libbgp::ERROR, "accept(): %s\n", strerror(errno));
-            close(fd_conn);
-            continue;
-        }
-
-        inet_ntop(AF_INET, &(client_addr.sin_addr), client_addr_str, INET_ADDRSTRLEN);
-
-        logger.log(libbgp::INFO, "accept(): new client from %s.\n", client_addr_str);
-
-        std::thread handler_thread(&Feeder::handleSession, this, client_addr_str, fd_conn);
-        handler_thread.detach();
-    }
+    return true;
 }
 
 void Feeder::stop() {
-
+    running = false;
+    logger.log(libbgp::INFO, "Feeder::stop: shutting down...\n");
+    int fd_sock_temp = fd_sock;
+    fd_sock = -1;
+    close(fd_sock_temp);
+    for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
 }
 
 void Feeder::join() {
-
+    for (std::thread &t : threads) {
+        if (t.joinable()) t.join();
+    }
 }
 
 void Feeder::tick() {
@@ -100,9 +86,9 @@ void Feeder::tick() {
         time %= update_interval;
         if (time == 0) fetcher.updateRib();
         time++;
-        fsm_list_mtx.lock();
+        list_mtx.lock();
         for (libbgp::BgpFsm *fsm : fsms) fsm->tick();
-        fsm_list_mtx.unlock();
+        list_mtx.unlock();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
@@ -116,33 +102,68 @@ void Feeder::handleSession(const char *peer_addr, int fd) {
 
     ssize_t read_ret = -1;
 
-    fsm_list_mtx.lock();
+    list_mtx.lock();
+    client_fds.push_back(fd);
     fsms.push_back(&this_fsm);
-    fsm_list_mtx.unlock();
-
-    logger.log(libbgp::INFO, "%zu routes in rib.\n", this_config.rib4->get().size());
+    list_mtx.unlock();
 
     while ((read_ret = read(fd, this_buffer, 4096)) > 0) {
         int fsm_ret = this_fsm.run(this_buffer, (size_t) read_ret);
-
-        // ret 0: fatal error/reset by peer.
-        // ret 2: notification sent to peer
         if (fsm_ret <= 0 || fsm_ret == 2) break;
     }
 
-    close(fd);
-
     this_fsm.resetHard();
 
-    fsm_list_mtx.lock();
+    list_mtx.lock();
+    for (std::vector<int>::const_iterator iter = client_fds.begin(); iter != client_fds.end(); iter++) {
+        if (*iter == fd) {
+            client_fds.erase(iter);
+            break;
+        }
+    }
     for (std::vector<libbgp::BgpFsm *>::const_iterator iter = fsms.begin(); iter != fsms.end(); iter++) {
         if (*iter == &this_fsm) {
             fsms.erase(iter);
             break;
         }
     }
-    fsm_list_mtx.unlock();
-    logger.log(libbgp::INFO, "session with AS%d (%s) closed.\n", this_fsm.getPeerAsn(), peer_addr);
+    list_mtx.unlock();
+    close(fd);
+    logger.log(libbgp::INFO, "Feeder::handleSession: session with AS%d (%s) closed.\n", this_fsm.getPeerAsn(), peer_addr);
+}
+
+void Feeder::handleAccept() {
+    struct sockaddr_in client_addr;
+    socklen_t caddr_len = sizeof(client_addr);
+    char client_addr_str[INET_ADDRSTRLEN];
+
+    while (running) {
+        int fd_conn = accept(fd_sock, (struct sockaddr *) &client_addr, &caddr_len);
+
+        if (fd_sock <= 0) {
+            if (running) {
+                logger.log(libbgp::FATAL, "Feeder::handleAccept: socket unexpectedly closed, stopping.\n");
+                close(fd_sock);
+                stop();
+                return;
+            }
+            break;
+        }
+
+        if (fd_conn < 0) {
+            logger.log(libbgp::ERROR, "Feeder::handleAccept: accept(): %s\n", strerror(errno));
+            close(fd_conn);
+            continue;
+        }
+
+        inet_ntop(AF_INET, &(client_addr.sin_addr), client_addr_str, INET_ADDRSTRLEN);
+
+        logger.log(libbgp::INFO, "Feeder::handleAccept: new client from %s.\n", client_addr_str);
+        threads.push_back(std::thread (&Feeder::handleSession, this, client_addr_str, fd_conn));
+    }
+
+    logger.log(libbgp::INFO, "Feeder::handleAccept: accept handler stopped.\n");
+    if (fd_sock > 0) close(fd_sock);
 }
 
 }
