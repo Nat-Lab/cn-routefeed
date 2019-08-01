@@ -1,7 +1,7 @@
 cn-routefeed: China Routefeed
 ---
 
-`cn-routefeed` is a BGP speaker that feeds peer all China IPv4 delegations. The delegation information is fetched from APNIC (from <http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest>). `cn-routefeed` might be useful if you are trying to set up special routing for IPv4 routes that are based in China.
+`cn-routefeed` is a BGP speaker that feeds all China IPv4 delegations to peer. The delegation information is fetched from APNIC (from <http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest>). `cn-routefeed` might be useful if you are trying to set up special routing for IPv4 routes that are based in China.
 
 If APNIC changed the URL of delegation information file in the future, you could change that URL on line 5 of `fetcher.cc`.
 
@@ -9,7 +9,7 @@ If APNIC changed the URL of delegation information file in the future, you could
 
 `cn-routefeed` need the following build dependencies:
 
-- g++
+- g++ (or any other c++ compiler)
 - [libbgp](https://github.com/Nat-Lab/libbgp) 
 - libcurl
 - cmake (optional)
@@ -60,6 +60,14 @@ optional arguments:
   -t INTERVAL  Time in second to wait between fetching update from APNIC.
                (default: 86400)
 ```
+
+For example, you can start a feeder with the following command:
+
+```
+# routefeed -a 65000 -i 172.16.0.1 -n 172.16.0.1
+```
+
+This command starts a BGP speaker on `0.0.0.0:179`, with ASN 65000. It accepts peer with any ASN and will feed the peer with routes using `172.16.0.1` as nexthop.
 
 ### License
 
