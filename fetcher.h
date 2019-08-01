@@ -4,15 +4,16 @@
 #include <vector>
 #include <algorithm>
 #include <stdint.h>
-#include <libbgp/prefix4.h>
+#include <libbgp/bgp-rib4.h>
 #include <curl/curl.h>
 
 namespace cnrf {
 
 class Fetcher {
 public:
-    Fetcher();
+    Fetcher(libbgp::BgpRib4 *rib, libbgp::RouteEventBus *rev_bus, uint32_t nexthop);
     ~Fetcher();
+    bool updateRib();
     bool getRoutesDiff(std::vector<libbgp::Prefix4> &added, std::vector<libbgp::Prefix4> &dropped);
     size_t handleRead(const char* buffer, size_t size);
 
@@ -20,9 +21,13 @@ private:
     char line_buffer[256];
     char *read_buffer;
     size_t buffer_left;
+    uint32_t nexthop;
 
     std::vector<libbgp::Prefix4> last_allocs;
     std::vector<libbgp::Prefix4> cur_allocs;
+    libbgp::BgpRib4 *rib;
+    libbgp::RouteEventBus *rev_bus;
+    libbgp::BgpLogHandler logger;
 
     CURL *curl;
 };

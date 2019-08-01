@@ -11,11 +11,14 @@ static size_t do_write(void *ptr, size_t size, size_t nmemb, Fetcher *fetcher) {
     return fetcher->handleRead((char *) ptr, size * nmemb);
 }
 
-Fetcher::Fetcher() {
+Fetcher::Fetcher(libbgp::BgpRib4 *rib, libbgp::RouteEventBus *rev_bus, uint32_t nexthop) {
     curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, DELEGATE_DB);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, do_write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
+    this->rib = rib;
+    this->rev_bus = rev_bus;
+    this->nexthop = nexthop;
     buffer_left = 0;
 }
 
@@ -88,10 +91,10 @@ nextline:
     return size;
 }
 
-bool Fetcher::getRoutesDiff(std::vector<libbgp::Prefix4> &added, std::vector<libbgp::Prefix4> &dropped) {
+bool Fetcher::updateRib() {
+    std::vector<libbgp::Prefix4> added;
+    std::vector<libbgp::Prefix4> dropped;
     cur_allocs.clear();
-    added.clear();
-    dropped.clear();
     long response_code;
     double elapsed;
     fprintf(stderr, "[INFO] Fetcher::getRoutesDiff: fetching latest delegations...\n");
@@ -125,6 +128,8 @@ bool Fetcher::getRoutesDiff(std::vector<libbgp::Prefix4> &added, std::vector<lib
         fprintf(stderr, "[INFO] Fetcher::getRoutesDiff: diff: %lu routes added, %lu routes dropped.\n", added.size(), dropped.size());
 
         last_allocs = cur_allocs;
+        rib->insert(&logger, added, nexthop, rev_bus);
+        rib->withdraw(0, dropped, rev_bus);
     } else {
         fprintf(stderr, "[WARN] Fetcher::getRoutesDiff: failed to fetch delegations: HTTP %ld.\n", response_code);
         return false;
