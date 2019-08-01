@@ -90,6 +90,8 @@ nextline:
 
 bool Fetcher::getRoutesDiff(std::vector<libbgp::Prefix4> &added, std::vector<libbgp::Prefix4> &dropped) {
     cur_allocs.clear();
+    added.clear();
+    dropped.clear();
     long response_code;
     double elapsed;
     fprintf(stderr, "[INFO] Fetcher::getRoutesDiff: fetching latest delegations...\n");
