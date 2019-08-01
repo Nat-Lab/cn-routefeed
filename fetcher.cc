@@ -2,8 +2,7 @@
 #include <string.h>
 #include "fetcher.h"
 #include "math.h"
-//#define DELEGATE_DB "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
-#define DELEGATE_DB "http://127.0.0.1:80/delegated.cvs"
+#define DELEGATE_DB "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
 
 namespace cnrf {
 
