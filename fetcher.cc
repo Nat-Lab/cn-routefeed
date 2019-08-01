@@ -19,11 +19,12 @@ Fetcher::Fetcher(libbgp::BgpRib4 *rib, libbgp::RouteEventBus *rev_bus, uint32_t 
     this->rib = rib;
     this->rev_bus = rev_bus;
     this->nexthop = nexthop;
+    read_buffer = nullptr;
     buffer_left = 0;
 }
 
 Fetcher::~Fetcher() {
-    if (buffer_left != 0) free(read_buffer);
+    if (read_buffer != nullptr) free(read_buffer);
     curl_easy_cleanup(curl);
 }
 
@@ -45,10 +46,8 @@ size_t Fetcher::handleRead(const char* buffer, size_t size) {
 
     while (read < buf_sz) {
         if (*ptr != '\n' || *ptr == 0) {
-
             ptr++;
             read++;
-
         } else {
             if (*cur != '#') {
                 size_t line_len = ptr - cur;
