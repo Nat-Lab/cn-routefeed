@@ -95,18 +95,18 @@ bool Fetcher::updateRib() {
     cur_allocs.clear();
     long response_code;
     double elapsed;
-    logger.log(libbgp::INFO, "Fetcher::getRoutesDiff: fetching latest delegations...\n");
+    logger.log(libbgp::INFO, "Fetcher::updateRib: fetching latest delegations...\n");
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
     
     if (response_code == 200) {
-        logger.log(libbgp::INFO, "Fetcher::getRoutesDiff: update fetch completed in %f seconds, number of delegations: %zu\n", elapsed, cur_allocs.size());
+        logger.log(libbgp::INFO, "Fetcher::updateRib: update fetch completed in %f seconds, number of delegations: %zu\n", elapsed, cur_allocs.size());
 
         //std::set_difference(cur_allocs.begin(), cur_allocs.end(), last_allocs.begin(), last_allocs.end(), std::inserter(added, added.begin()));
         //std::set_difference(last_allocs.begin(), last_allocs.end(), cur_allocs.begin(), cur_allocs.end(), std::inserter(dropped, dropped.begin()));
 
-        logger.log(libbgp::INFO, "Fetcher::getRoutesDiff: computing diffs...\n");
+        logger.log(libbgp::INFO, "Fetcher::updateRib: computing diffs...\n");
 
         for (const libbgp::Prefix4 &prefix : cur_allocs) {
             if (std::find(last_allocs.begin(), last_allocs.end(), prefix) == last_allocs.end()) {
@@ -120,13 +120,13 @@ bool Fetcher::updateRib() {
             }
         }
 
-        logger.log(libbgp::INFO, "Fetcher::getRoutesDiff: diff: %zu routes added, %zu routes dropped.\n", added.size(), dropped.size());
+        logger.log(libbgp::INFO, "Fetcher::updateRib: diff: %zu routes added, %zu routes dropped.\n", added.size(), dropped.size());
 
         last_allocs = cur_allocs;
         rib->insert(&logger, added, nexthop, rev_bus);
         rib->withdraw(0, dropped, rev_bus);
     } else {
-        logger.log(libbgp::WARN, "Fetcher::getRoutesDiff: failed to fetch delegations: HTTP %ld.\n", response_code);
+        logger.log(libbgp::WARN, "Fetcher::updateRib: failed to fetch delegations: HTTP %ld.\n", response_code);
         return false;
     }
     
