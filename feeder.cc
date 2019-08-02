@@ -75,6 +75,9 @@ void Feeder::stop() {
     shutdown(fd_sock_temp, SHUT_RDWR);
     close(fd_sock_temp);
     for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
+    for (std::thread &t : threads) {
+        t.detach();
+    }
 }
 
 void Feeder::join() {
@@ -98,6 +101,7 @@ void Feeder::tick() {
 }
 
 void Feeder::handleSession(const char *peer_addr, int fd) {
+    char *p_addr = strdup(peer_addr);
     uint8_t this_buffer[4096];
     libbgp::FdOutHandler this_out(fd);
     libbgp::BgpConfig this_config(config_template);
@@ -133,7 +137,8 @@ void Feeder::handleSession(const char *peer_addr, int fd) {
     }
     list_mtx.unlock();
     close(fd);
-    logger.log(libbgp::INFO, "Feeder::handleSession: session with AS%d (%s) closed.\n", this_fsm.getPeerAsn(), peer_addr);
+    logger.log(libbgp::INFO, "Feeder::handleSession: session with AS%d (%s) closed.\n", this_fsm.getPeerAsn(), p_addr);
+    free(p_addr);
 }
 
 void Feeder::handleAccept() {
