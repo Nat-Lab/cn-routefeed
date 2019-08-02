@@ -11,12 +11,13 @@ namespace cnrf {
 Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port) : 
     rib(&logger), fetcher(&rib, &bus, nexthop) {
     logger.setLogLevel(libbgp::INFO);
+    fsm_logger.setLogLevel(libbgp::WARN);
     running = false;
     config_template.asn = my_asn;
     config_template.default_nexthop4 = nexthop;
     config_template.forced_default_nexthop4 = true;
     config_template.in_filters4 = libbgp::BgpFilterRules(libbgp::REJECT);
-    config_template.log_handler = &logger;
+    config_template.log_handler = &fsm_logger;
     config_template.peer_asn = 0;
     config_template.rib4 = &rib;
     config_template.router_id = bgp_id;

@@ -27,6 +27,7 @@ private:
     in_port_t port;
 
     libbgp::BgpLogHandler logger;
+    libbgp::BgpLogHandler fsm_logger;
     libbgp::BgpConfig config_template;
     libbgp::BgpRib4 rib;
     libbgp::RouteEventBus bus;
