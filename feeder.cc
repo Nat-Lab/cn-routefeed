@@ -27,6 +27,8 @@ Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t upda
 }
 
 bool Feeder::start() {
+    if (running) return false;
+
     fd_sock = -1;
     struct sockaddr_in server_addr;
 
@@ -64,14 +66,16 @@ bool Feeder::start() {
 
     logger.log(libbgp::INFO, "Feeder::start: ready.\n");
 
+    running = true;
+
     threads.push_back(std::thread (&Feeder::tick, this));
     threads.push_back(std::thread (&Feeder::handleAccept, this));
 
-    running = true;
     return true;
 }
 
 void Feeder::stop() {
+    if (!running) return;
     running = false;
     logger.log(libbgp::INFO, "Feeder::stop: shutting down...\n");
     int fd_sock_temp = fd_sock;
