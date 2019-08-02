@@ -10,7 +10,7 @@ namespace cnrf {
 
 Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port) : 
     rib(&logger), fetcher(&rib, &bus, nexthop) {
-    logger.setLogLevel(libbgp::WARN);
+    logger.setLogLevel(libbgp::INFO);
     running = false;
     config_template.asn = my_asn;
     config_template.default_nexthop4 = nexthop;
