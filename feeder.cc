@@ -58,6 +58,10 @@ bool Feeder::start() {
         return false;
     }
 
+    logger.log(libbgp::INFO, "Feeder::start: init rib...\n");
+
+    fetcher.updateRib();
+
     logger.log(libbgp::INFO, "Feeder::start: ready.\n");
 
     threads.push_back(std::thread (&Feeder::tick, this));
@@ -87,7 +91,7 @@ void Feeder::join() {
 }
 
 void Feeder::tick() {
-    uint32_t time = 0;
+    uint32_t time = 1;
 
     while (running) {
         time %= update_interval;
