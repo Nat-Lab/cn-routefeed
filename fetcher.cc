@@ -62,7 +62,7 @@ size_t Fetcher::handleRead(const char* buffer, size_t size) {
                 char *type = strtok_r(rest, "|", &rest);
                 if (strncmp("ipv4", type, 4) != 0) goto nextline;
                 char *prefix = strtok_r(rest, "|", &rest);
-                uint8_t length = log(atoi(strtok_r(rest, "|", &rest)))/log(2);
+                uint8_t length = 32 - log(atoi(strtok_r(rest, "|", &rest)))/log(2);
                 cur_allocs.push_back(libbgp::Prefix4(prefix, length));
 
                 size_t cur_sz = cur_allocs.size();
