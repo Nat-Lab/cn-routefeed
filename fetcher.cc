@@ -43,35 +43,36 @@ size_t Fetcher::handleRead(const char* buffer, size_t size) {
         if (*ptr != '\n' || *ptr == 0) {
             ptr++;
             read++;
-        } else {
-            if (*cur != '#') {
-                size_t line_len = ptr - cur;
-                if (line_len > 128) throw "invalid_line_len";
-                memcpy(line_buffer, cur, line_len);
-                line_buffer[line_len] = 0;
+            continue;
+        }
 
-                char *rest = line_buffer;
+        if (*cur != '#') {
+            size_t line_len = ptr - cur;
+            if (line_len > 128) throw "invalid_line_len";
+            memcpy(line_buffer, cur, line_len);
+            line_buffer[line_len] = 0;
 
-                (void) strtok_r(rest, "|", &rest); // skip first field
-                char *cc = strtok_r(rest, "|", &rest);
-                if (strncmp("CN", cc, 2) != 0) goto nextline;
-                char *type = strtok_r(rest, "|", &rest);
-                if (strncmp("ipv4", type, 4) != 0) goto nextline;
-                char *prefix = strtok_r(rest, "|", &rest);
-                uint8_t length = 32 - log(atoi(strtok_r(rest, "|", &rest)))/log(2);
-                cur_allocs.push_back(libbgp::Prefix4(prefix, length));
+            char *rest = line_buffer;
 
-                size_t cur_sz = cur_allocs.size();
-                if (cur_sz % 1000 == 0 && cur_sz != 0) {
-                    logger.log(libbgp::INFO, "Fetcher::handleRead: updating: %zu delegations loaded.\n", cur_sz);
-                }
+            (void) strtok_r(rest, "|", &rest); // skip first field
+            char *cc = strtok_r(rest, "|", &rest);
+            if (strncmp("CN", cc, 2) != 0) goto nextline;
+            char *type = strtok_r(rest, "|", &rest);
+            if (strncmp("ipv4", type, 4) != 0) goto nextline;
+            char *prefix = strtok_r(rest, "|", &rest);
+            uint8_t length = 32 - log(atoi(strtok_r(rest, "|", &rest)))/log(2);
+            cur_allocs.push_back(libbgp::Prefix4(prefix, length));
+
+            size_t cur_sz = cur_allocs.size();
+            if (cur_sz % 1000 == 0 && cur_sz != 0) {
+                logger.log(libbgp::INFO, "Fetcher::handleRead: updating: %zu delegations loaded.\n", cur_sz);
             }
+        }
 
 nextline:
-            cur = ptr + 1;
-            ptr++;
-            read++;
-        }
+        cur = ptr + 1;
+        ptr++;
+        read++;
     }
 
     buffer_left = ptr - cur;
@@ -94,37 +95,33 @@ bool Fetcher::updateRib() {
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
-    
-    if (response_code == 200) {
-        logger.log(libbgp::INFO, "Fetcher::updateRib: update fetch completed in %f seconds, number of delegations: %zu\n", elapsed, cur_allocs.size());
 
-        //std::set_difference(cur_allocs.begin(), cur_allocs.end(), last_allocs.begin(), last_allocs.end(), std::inserter(added, added.begin()));
-        //std::set_difference(last_allocs.begin(), last_allocs.end(), cur_allocs.begin(), cur_allocs.end(), std::inserter(dropped, dropped.begin()));
-
-        logger.log(libbgp::INFO, "Fetcher::updateRib: computing diffs...\n");
-
-        for (const libbgp::Prefix4 &prefix : cur_allocs) {
-            if (std::find(last_allocs.begin(), last_allocs.end(), prefix) == last_allocs.end()) {
-                added.push_back(prefix);
-            }
-        }
-
-        for (const libbgp::Prefix4 &prefix : last_allocs) {
-            if (std::find(cur_allocs.begin(), cur_allocs.end(), prefix) == cur_allocs.end()) {
-                dropped.push_back(prefix);
-            }
-        }
-
-        logger.log(libbgp::INFO, "Fetcher::updateRib: diff: %zu routes added, %zu routes dropped.\n", added.size(), dropped.size());
-
-        last_allocs = cur_allocs;
-        rib->insert(&logger, added, nexthop, rev_bus);
-        rib->withdraw(0, dropped, rev_bus);
-    } else {
+    if (response_code != 200) {
         logger.log(libbgp::WARN, "Fetcher::updateRib: failed to fetch delegations: HTTP %ld.\n", response_code);
         return false;
     }
     
+
+    logger.log(libbgp::INFO, "Fetcher::updateRib: %zu delegations fetch completed in %f seconds, computing diffs...\n", cur_allocs.size(), elapsed);
+
+    for (const libbgp::Prefix4 &prefix : cur_allocs) {
+        if (std::find(last_allocs.begin(), last_allocs.end(), prefix) == last_allocs.end()) {
+            added.push_back(prefix);
+        }
+    }
+
+    for (const libbgp::Prefix4 &prefix : last_allocs) {
+        if (std::find(cur_allocs.begin(), cur_allocs.end(), prefix) == cur_allocs.end()) {
+            dropped.push_back(prefix);
+        }
+    }
+
+    logger.log(libbgp::INFO, "Fetcher::updateRib: %zu routes added, %zu routes dropped.\n", added.size(), dropped.size());
+
+    last_allocs = cur_allocs;
+    rib->insert(&logger, added, nexthop, rev_bus);
+    rib->withdraw(0, dropped, rev_bus);
+
     return true;
 }
 
