@@ -82,6 +82,9 @@ void Feeder::stop() {
     fd_sock = -1;
     shutdown(fd_sock_temp, SHUT_RDWR);
     close(fd_sock_temp);
+    for (libbgp::BgpFsm *fsm : fsms) {
+        fsm->stop();
+    }
     for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
     for (std::thread &t : threads) {
         t.detach();
@@ -102,7 +105,15 @@ void Feeder::tick() {
         if (time == 0) fetcher.updateRib();
         time++;
         list_mtx.lock();
-        for (libbgp::BgpFsm *fsm : fsms) fsm->tick();
+        for (std::vector<libbgp::BgpFsm *>::const_iterator iter = fsms.begin(); iter != fsms.end();) {
+            libbgp::BgpState s = (*iter)->getState();
+            if (s == libbgp::IDLE || s == libbgp::BROKEN) {
+                fsms.erase(iter);
+                continue;
+            }
+            (*iter)->tick();
+            iter++;
+        }
         list_mtx.unlock();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
