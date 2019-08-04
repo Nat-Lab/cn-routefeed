@@ -15,27 +15,23 @@ Fetcher::Fetcher(libbgp::BgpRib4 *rib, libbgp::RouteEventBus *rev_bus, uint32_t 
     curl_easy_setopt(curl, CURLOPT_URL, DELEGATE_DB);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, do_write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
+    curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 65535L);
     this->rib = rib;
     this->rev_bus = rev_bus;
     this->nexthop = nexthop;
-    read_buffer = nullptr;
     buffer_left = 0;
 }
 
 Fetcher::~Fetcher() {
-    if (read_buffer != nullptr) free(read_buffer);
     curl_easy_cleanup(curl);
+    curl_global_cleanup();
 }
 
 size_t Fetcher::handleRead(const char* buffer, size_t size) {
     size_t buf_sz = size;
 
     if (buffer_left != 0) {
-        char *new_buffer = (char *) malloc(size + buffer_left);
-        memcpy(new_buffer, read_buffer, buffer_left);
-        memcpy(new_buffer + buffer_left, buffer, size);
-        free(read_buffer);
-        read_buffer = new_buffer;
+        memcpy(read_buffer + buffer_left, buffer, size);
         buf_sz = size + buffer_left;
     }
 
@@ -81,7 +77,6 @@ nextline:
     buffer_left = ptr - cur;
 
     if (buffer_left > 0) {
-        read_buffer = (char *) malloc(buffer_left + 1);
         memcpy(read_buffer, cur, buffer_left);
         read_buffer[buffer_left] = 0;
     }

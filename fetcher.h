@@ -19,7 +19,7 @@ public:
 
 private:
     char line_buffer[256];
-    char *read_buffer;
+    char read_buffer[65536];
     size_t buffer_left;
     uint32_t nexthop;
 
