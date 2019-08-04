@@ -35,7 +35,7 @@ private:
     std::mutex list_mtx;
     std::vector<libbgp::BgpFsm*> fsms;
     std::vector<std::thread> threads;
-    std::vector<int> client_fds;
+    //std::vector<int> client_fds;
 
     Fetcher fetcher;
 

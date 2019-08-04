@@ -85,7 +85,7 @@ void Feeder::stop() {
     for (libbgp::BgpFsm *fsm : fsms) {
         fsm->stop();
     }
-    for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
+    //for (int fd : client_fds) shutdown(fd, SHUT_RDWR);
     for (std::thread &t : threads) {
         t.detach();
     }
@@ -130,7 +130,7 @@ void Feeder::handleSession(const char *peer_addr, int fd) {
     ssize_t read_ret = -1;
 
     list_mtx.lock();
-    client_fds.push_back(fd);
+    //client_fds.push_back(fd);
     fsms.push_back(&this_fsm);
     list_mtx.unlock();
 
@@ -142,12 +142,12 @@ void Feeder::handleSession(const char *peer_addr, int fd) {
     this_fsm.resetHard();
 
     list_mtx.lock();
-    for (std::vector<int>::const_iterator iter = client_fds.begin(); iter != client_fds.end(); iter++) {
+    /*for (std::vector<int>::const_iterator iter = client_fds.begin(); iter != client_fds.end(); iter++) {
         if (*iter == fd) {
             client_fds.erase(iter);
             break;
         }
-    }
+    }*/
     for (std::vector<libbgp::BgpFsm *>::const_iterator iter = fsms.begin(); iter != fsms.end(); iter++) {
         if (*iter == &this_fsm) {
             fsms.erase(iter);
