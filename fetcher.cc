@@ -102,7 +102,7 @@ bool Fetcher::updateRib() {
     }
     
 
-    logger.log(libbgp::INFO, "Fetcher::updateRib: %zu delegations fetch completed in %f seconds, computing diffs...\n", cur_allocs.size(), elapsed);
+    logger.log(libbgp::INFO, "Fetcher::updateRib: %zu delegations fetched in %f seconds, computing diffs...\n", cur_allocs.size(), elapsed);
 
     for (const libbgp::Prefix4 &prefix : cur_allocs) {
         if (std::find(last_allocs.begin(), last_allocs.end(), prefix) == last_allocs.end()) {
@@ -121,6 +121,8 @@ bool Fetcher::updateRib() {
     last_allocs = cur_allocs;
     rib->insert(&logger, added, nexthop, rev_bus);
     rib->withdraw(0, dropped, rev_bus);
+
+    logger.log(libbgp::INFO, "Fetcher::updateRib: rib updated.\n");
 
     return true;
 }
