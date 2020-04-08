@@ -130,7 +130,7 @@ bool Fetcher::updateRib() {
     
     std::vector<libbgp::Prefix4> dropped_e;
     for (const libbgp::Prefix4 r : dropped) {
-        std::pair<bool, const libbgp::BgpRib4Entry *> rslt = rib->withdraw(0, r);
+        std::pair<bool, const void*> rslt = rib->withdraw(0, r);
         if (!rslt.first) dropped_e.push_back(r);
     }
 
