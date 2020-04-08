@@ -119,8 +119,26 @@ bool Fetcher::updateRib() {
     logger.log(libbgp::INFO, "Fetcher::updateRib: %zu routes added, %zu routes dropped.\n", added.size(), dropped.size());
 
     last_allocs = cur_allocs;
-    rib->insert(&logger, added, nexthop, rev_bus);
-    rib->withdraw(0, dropped, rev_bus);
+    std::vector<libbgp::BgpRib4Entry> added_e = rib->insert(&logger, added, nexthop);
+    if (added_e.size() > 0) {
+        std::vector<std::shared_ptr<libbgp::BgpPathAttrib>> attrib = added_e[0].attribs;
+        libbgp::Route4AddEvent ae;
+        ae.shared_attribs = &attrib;
+        ae.new_routes = &added;
+        rev_bus->publish(NULL, ae);
+    }
+    
+    std::vector<libbgp::Prefix4> dropped_e;
+    for (const libbgp::Prefix4 r : dropped) {
+        std::pair<bool, const libbgp::BgpRib4Entry *> rslt = rib->withdraw(0, r);
+        if (!rslt.first) dropped_e.push_back(r);
+    }
+
+    if (dropped_e.size() > 0) {
+        libbgp::Route4WithdrawEvent we;
+        we.routes = &dropped_e;
+        rev_bus->publish(NULL, we);
+    }
 
     logger.log(libbgp::INFO, "Fetcher::updateRib: rib updated.\n");
 

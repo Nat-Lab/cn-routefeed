@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdint.h>
 #include <libbgp/bgp-rib4.h>
+#include <libbgp/route-event-bus.h>
 #include <curl/curl.h>
 
 namespace cnrf {
