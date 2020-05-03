@@ -34,7 +34,7 @@ $ make
 Or, if you are not into the `cmake` kind of thing, you can build the project with:
 
 ```
-$ g++ -lbgp -lcurl -lpthread *.cc -oroutefeed 
+$ g++ *.cc -lbgp -lcurl -lpthread -oroutefeed 
 ```
 
 It should work on most of the cases.
@@ -45,9 +45,10 @@ It should work on most of the cases.
 
 ```
 usage: routefeed [-l HOST] [-p PORT] [-t INTERVAL] -a ASN -i BGP_ID -n NEXTHOP
+                 [-v]
 
 cn-routefeed is a BGP speaker that feeds all China IPv4 delegations to peer. 
-Delegation information are fetch from APNIC.
+Delegation information is fetch from APNIC.
 
 required arguments:
   -a ASN       Local ASN of the BGP speaker.
@@ -59,6 +60,7 @@ optional arguments:
   -p PORT      TCP port number to bind the BGP speaker on. (default: 179)
   -t INTERVAL  Time in second to wait between fetching update from APNIC.
                (default: 86400)
+  -v           Enable debug mode (verbose).
 ```
 
 For example, you can start a feeder with the following command:
