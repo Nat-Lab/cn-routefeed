@@ -11,7 +11,7 @@ namespace cnrf {
 
 class Feeder {
 public:
-    Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port);
+    Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port, bool verbose);
     bool start();
     void stop();
     void join();

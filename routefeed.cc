@@ -14,6 +14,7 @@ void handle_sig(__attribute__((unused)) int sig) {
 
 void help() {
     fprintf(stderr, "usage: routefeed [-l HOST] [-p PORT] [-t INTERVAL] -a ASN -i BGP_ID -n NEXTHOP\n");
+    fprintf(stderr, "                 [-v]\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "cn-routefeed is a BGP speaker that feeds all China IPv4 delegations to peer. \n");
     fprintf(stderr, "Delegation information is fetch from APNIC.\n");
@@ -28,6 +29,9 @@ void help() {
     fprintf(stderr, "  -p PORT      TCP port number to bind the BGP speaker on. (default: 179)\n");
     fprintf(stderr, "  -t INTERVAL  Time in second to wait between fetching update from APNIC.\n");
     fprintf(stderr, "               (default: 86400)\n");
+    fprintf(stderr, "  -v           Enable debug mode (verbose).\n");
+
+
 }
 
 int main (int argc, char **argv) {
@@ -37,10 +41,11 @@ int main (int argc, char **argv) {
     uint32_t nexthop = 0;
     uint32_t router_id = 0;
     uint32_t interval = 86400;
+    bool verbose = false;
 
     char opt;
 
-    while ((opt = getopt(argc, argv, "l:p:a:i:n:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "l:p:a:i:n:t:v")) != -1) {
         switch (opt) {
             case 'l': host = inet_addr(optarg); break;
             case 'p': port = atoi(optarg); break;
@@ -48,6 +53,7 @@ int main (int argc, char **argv) {
             case 'i': inet_pton(AF_INET, optarg, &router_id); break;
             case 'n': inet_pton(AF_INET, optarg, &nexthop); break;
             case 't': interval = atoi(optarg); break;
+            case 'v': verbose = true; break;
             default: 
                 help();
                 return 1;
@@ -62,7 +68,7 @@ int main (int argc, char **argv) {
     signal(SIGINT, handle_sig);
     signal(SIGTERM, handle_sig);
 
-    Feeder feeder(asn, router_id, nexthop, interval, host, port); 
+    Feeder feeder(asn, router_id, nexthop, interval, host, port, verbose); 
     ::feeder = &feeder;
 
     feeder.start();

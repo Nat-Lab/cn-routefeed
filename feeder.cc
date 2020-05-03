@@ -8,10 +8,10 @@
 
 namespace cnrf {
 
-Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port) : 
+Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port, bool verbose) : 
     rib(&logger), fetcher(&rib, &bus, nexthop) {
-    logger.setLogLevel(libbgp::INFO);
-    fsm_logger.setLogLevel(libbgp::WARN);
+    logger.setLogLevel(verbose ? libbgp::DEBUG : libbgp::INFO);
+    fsm_logger.setLogLevel(verbose ? libbgp::DEBUG : libbgp::WARN);
     running = false;
     config_template.asn = my_asn;
     config_template.default_nexthop4 = nexthop;
@@ -156,7 +156,7 @@ void Feeder::handleSession(const char *peer_addr, int fd) {
     }
     list_mtx.unlock();
     close(fd);
-    logger.log(libbgp::INFO, "Feeder::handleSession: session with AS%d (%s) closed.\n", this_fsm.getPeerAsn(), p_addr);
+    logger.log(libbgp::INFO, "Feeder::handleSession: session with AS%u (%s) closed.\n", this_fsm.getPeerAsn(), p_addr);
     free(p_addr);
 }
 
