@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.6)
 project (routefeed)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O2 -g -Wall -Wextra -Werror")
 
 find_path(LIBBGP_INCLUDE_DIR NAMES libbgp/bgp-fsm.h)
 find_path(CURL_INCLUDE_DIR NAMES libbgp/bgp-fsm.h)

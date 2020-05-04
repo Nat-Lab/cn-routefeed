@@ -9,9 +9,19 @@
 
 namespace cnrf {
 
+struct FeederConfiguration {
+    uint32_t my_asn = 0;
+    uint32_t bgp_id = 0;
+    uint32_t nexthop = 0;
+    uint32_t update_interval = 86400;
+    in_addr_t host = INADDR_ANY;
+    in_port_t port = 179;
+    bool verbose = false;
+};
+
 class Feeder {
 public:
-    Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port, bool verbose);
+    Feeder(const FeederConfiguration &feder_config);
     bool start();
     void stop();
     void join();

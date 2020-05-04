@@ -8,22 +8,22 @@
 
 namespace cnrf {
 
-Feeder::Feeder(uint32_t my_asn, uint32_t bgp_id, uint32_t nexthop, uint32_t update_interval, in_addr_t host, in_port_t port, bool verbose) : 
-    rib(&logger), fetcher(&rib, &bus, nexthop) {
-    logger.setLogLevel(verbose ? libbgp::DEBUG : libbgp::INFO);
-    fsm_logger.setLogLevel(verbose ? libbgp::DEBUG : libbgp::WARN);
+Feeder::Feeder(const FeederConfiguration &feder_config) : 
+    rib(&logger), fetcher(&rib, &bus, feder_config.nexthop) {
+    logger.setLogLevel(feder_config.verbose ? libbgp::DEBUG : libbgp::INFO);
+    fsm_logger.setLogLevel(feder_config.verbose ? libbgp::DEBUG : libbgp::WARN);
     running = false;
-    config_template.asn = my_asn;
-    config_template.default_nexthop4 = nexthop;
+    config_template.asn = feder_config.my_asn;
+    config_template.default_nexthop4 = feder_config.nexthop;
     config_template.forced_default_nexthop4 = true;
     config_template.in_filters4 = libbgp::BgpFilterRules(libbgp::REJECT);
     config_template.log_handler = &fsm_logger;
     config_template.peer_asn = 0;
     config_template.rib4 = &rib;
-    config_template.router_id = bgp_id;
-    this->update_interval = update_interval;
-    this->host = host;
-    this->port = port;
+    config_template.router_id = feder_config.bgp_id;
+    this->update_interval = feder_config.update_interval;
+    this->host = feder_config.host;
+    this->port = feder_config.port;
 }
 
 bool Feeder::start() {
