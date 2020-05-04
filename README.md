@@ -45,7 +45,7 @@ It should work on most of the cases.
 
 ```
 usage: routefeed [-l HOST] [-p PORT] [-t INTERVAL] -a ASN -i BGP_ID -n NEXTHOP
-                 [-v]
+                 [-c CONFIG] [-v]
 
 cn-routefeed is a BGP speaker that feeds all China IPv4 delegations to peer. 
 Delegation information is fetch from APNIC.
@@ -60,6 +60,7 @@ optional arguments:
   -p PORT      TCP port number to bind the BGP speaker on. (default: 179)
   -t INTERVAL  Time in second to wait between fetching update from APNIC.
                (default: 86400)
+  -c CONFIG    Read command line arguments from file.
   -v           Enable debug mode (verbose).
 ```
 
