@@ -79,14 +79,20 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
             long sz = ftell(fp);
             rewind(fp);
 
-            char *buf = (char *) malloc(sz+1);
+            char buf[512];
+            char *buf_ptr = buf;
+            if (sizeof(sz) < (size_t) sz) {
+                fclose(fp);
+                fprintf(stderr, "config file too big.\n");
+                return 1;
+            } 
 
             fread(buf, sz, 1, fp);
             fclose(fp);
 
             char **new_argv = NULL, *cur;
             int new_argc = 0;
-            while ((cur = strsep(&buf, " \n\t")) != NULL) {
+            while ((cur = strsep(&buf_ptr, " \n\t")) != NULL) {
                 if (new_argc == 0) {
                     new_argv = (char **) malloc(sizeof(char *));
                 } else {
@@ -97,8 +103,6 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
                 strcpy(new_argv[new_argc], cur);
                 ++new_argc;
             };
-
-            free(buf);
 
             if (parse_config(new_argc, new_argv, config) == 1) {
                 fprintf(stderr, "error parsing configuration.\n");
