@@ -80,8 +80,10 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
             rewind(fp);
 
             char buf[512];
+            memset(buf, 0, sizeof(buf));
+
             char *buf_ptr = buf;
-            if (sizeof(sz) < (size_t) sz) {
+            if (sizeof(buf) < (size_t) sz) {
                 fclose(fp);
                 fprintf(stderr, "config file too big.\n");
                 return 1;
@@ -90,7 +92,7 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
             fread(buf, sz, 1, fp);
             fclose(fp);
 
-            char **new_argv = NULL, *cur;
+            char **new_argv = NULL, *cur = NULL;
             int new_argc = 0;
             while ((cur = strsep(&buf_ptr, " \n\t")) != NULL) {
                 if (new_argc == 0) {
