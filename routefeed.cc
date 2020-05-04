@@ -34,6 +34,8 @@ void help() {
 }
 
 int parse_config(int argc, char **argv, FeederConfiguration &config) {
+    if (argv == NULL || argc == 0) return 0;
+
     for (int i = 0; i < argc; ++i) {
         if (i + 1 < argc && strncmp("-l", argv[i], 2) == 0) {
             if (inet_pton(AF_INET, argv[++i], &config.host) != 1) {
@@ -73,7 +75,7 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
             fread(buf, sz, 1, fp);
             fclose(fp);
 
-            char **new_argv, *cur;
+            char **new_argv = NULL, *cur;
             int new_argc = 0;
             while ((cur = strsep(&buf, " \n\t")) != NULL) {
                 if (new_argc == 0) {
