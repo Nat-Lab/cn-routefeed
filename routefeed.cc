@@ -33,36 +33,45 @@ void help() {
     fprintf(stderr, "  -v           Enable debug mode (verbose).\n");
 }
 
+void free_argv(int argc, char **argv) {
+    if (argv == NULL || argc == 0) return;
+    for (int i = 0; i < argc; i++) {
+        free(argv[i]);
+    }
+
+    free(argv);
+}
+
 int parse_config(int argc, char **argv, FeederConfiguration &config) {
     if (argv == NULL || argc == 0) return 0;
 
     for (int i = 0; i < argc; ++i) {
-        if (i + 1 < argc && strncmp("-l", argv[i], 2) == 0) {
+        if (i + 1 < argc && strncmp("-l", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             if (inet_pton(AF_INET, argv[++i], &config.host) != 1) {
-                fprintf(stderr, "invalid host: %s\n", argv[i]);
+                fprintf(stderr, "invalid host: \"%s\".\n", argv[i]);
                 return 1;
             }
-        } else if (i + 1 < argc && strncmp("-p", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-p", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             config.port = atoi(argv[++i]);
-        } else if (i + 1 < argc && strncmp("-a", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-a", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             config.my_asn = atoi(argv[++i]);
-        } else if (i + 1 < argc && strncmp("-i", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-i", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             if (inet_pton(AF_INET, argv[++i], &config.bgp_id) != 1) {
-                fprintf(stderr, "invalid bgp_id: \"%s\"\n", argv[i]);
+                fprintf(stderr, "invalid bgp_id: \"%s\".\n", argv[i]);
                 return 1;
             }
-        } else if (i + 1 < argc && strncmp("-n", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-n", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             if (inet_pton(AF_INET, argv[++i], &config.nexthop) != 1) {
-                fprintf(stderr, "invalid nexthop: \"%s\"\n", argv[i]);
+                fprintf(stderr, "invalid nexthop: \"%s\".\n", argv[i]);
                 return 1;
             }
-        } else if (i + 1 < argc && strncmp("-t", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-t", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             config.update_interval = atoi(argv[++i]);
-        } else if (i + 1 < argc && strncmp("-c", argv[i], 2) == 0) {
+        } else if (i + 1 < argc && strncmp("-c", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             
             FILE *fp = fopen(argv[++i], "r");
             if(!fp) {
-                fprintf(stderr, "can't open config file: \"%s\"\n", argv[i]);
+                fprintf(stderr, "can't open config file: \"%s\".\n", argv[i]);
                 return 1;
             }
 
@@ -90,11 +99,19 @@ int parse_config(int argc, char **argv, FeederConfiguration &config) {
             };
 
             free(buf);
-            parse_config(new_argc, new_argv, config);
-            free(new_argv);
 
-        } else if (strncmp("-v", argv[i], 2) == 0) {
+            if (parse_config(new_argc, new_argv, config) == 1) {
+                fprintf(stderr, "error parsing configuration.\n");
+                free_argv(new_argc, new_argv);
+                return 1;
+            }
+            free_argv(new_argc, new_argv);
+
+        } else if (strncmp("-v", argv[i], 2) == 0 && strlen(argv[i]) == 2) {
             config.verbose = true;
+        } else {
+            fprintf(stderr, "unknow command line argument: \"%s\".\n", argv[i]);
+            return 1;
         }
     }
 
